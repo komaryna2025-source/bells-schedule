@@ -58,7 +58,6 @@
       font-weight: normal;
       opacity: 0.95;
       margin-top: 6px;
-      letter-spacing: normal;
     }
     .controls {
       background: var(--card-bg);
@@ -97,12 +96,10 @@
       border-left: 5px solid transparent;
       transition: all 0.3s ease;
     }
-    /* Стилі для уроку, який триває зараз */
     .item.active {
       border-left: 6px solid var(--active-border);
       background: var(--active-bg);
       box-shadow: 0 2px 8px rgba(34, 197, 94, 0.2);
-      transform: scale(1.01);
     }
     .item-title {
       font-weight: bold;
@@ -147,12 +144,15 @@
       background: #e2e8f0;
       border: none;
       border-radius: 8px;
-      padding: 6px 10px;
+      padding: 8px 12px;
       cursor: pointer;
       font-size: 0.85rem;
+      font-weight: 600;
+      color: #1e293b;
       transition: background 0.2s;
     }
     .play-btn:hover { background: #cbd5e1; }
+    .play-btn:active { background: #94a3b8; }
   </style>
 </head>
 <body>
@@ -165,7 +165,7 @@
 
   <div class="clock-card">
     <div id="current-time">00:00:00</div>
-    <div class="status" id="status-text">Автоматичне відтворення вимкнено</div>
+    <div class="status" id="status-text">⚪ Ручний режим (авто-дзвінки вимкнено)</div>
   </div>
 
   <div class="controls">
@@ -175,7 +175,7 @@
   <div class="schedule-list" id="schedule"></div>
 </div>
 
-<audio id="audio-player" crossorigin="anonymous"></audio>
+<audio id="audio-player"></audio>
 
 <script>
   const scheduleData = [
@@ -195,16 +195,27 @@
   let autoPlayEnabled = false;
   let playedToday = new Set();
 
-  function getAudioUrl(fileId) {
-    if (!fileId) return null;
-    return `https://docs.google.com/uc?export=download&id=${fileId}`;
-  }
-
   function playAudio(fileId) {
     if (!fileId) return;
+
     const player = document.getElementById("audio-player");
-    player.src = getAudioUrl(fileId);
-    player.play().catch(e => console.error("Помилка відтворення:", e));
+    // Альтернативний надійний формат завантаження з Google Drive
+    const streamUrl = `https://drive.google.com/uc?export=download&id=${fileId}`;
+    
+    player.src = streamUrl;
+    player.load();
+    
+    const playPromise = player.play();
+    if (playPromise !== undefined) {
+      playPromise.catch(error => {
+        console.warn("Помилка відтворення через UC, пробуємо відкрити прямим джерелом:", error);
+        // Резервний варіант прямим відкриттям
+        player.src = `https://docs.google.com/uc?export=open&id=${fileId}`;
+        player.play().catch(e => {
+          alert("Не вдалося відтворити файл. Перевірте, чи відкритий доступ до аудіофайлу на Google Диску за посиланням ('Усі, хто мають посилання').");
+        });
+      });
+    }
   }
 
   function toggleAutoPlay() {
@@ -213,8 +224,9 @@
     const status = document.getElementById("status-text");
 
     if (autoPlayEnabled) {
+      // Ініціалізація аудіоконтексту для браузера
       const player = document.getElementById("audio-player");
-      player.play().catch(() => {}); // розблокування аудіо
+      player.play().catch(() => {});
       
       btn.innerText = "Зупинити авто-дзвінки";
       btn.style.background = "#dc2626";
@@ -222,7 +234,7 @@
     } else {
       btn.innerText = "Увімкнути авто-дзвінки";
       btn.style.background = "#16a34a";
-      status.innerText = "⚪ Автоматичне відтворення вимкнено";
+      status.innerText = "⚪ Ручний режим (авто-дзвінки вимкнено)";
     }
   }
 
@@ -247,15 +259,14 @@
           <div class="times">${timesText}</div>
         </div>
         <div class="btn-group">
-          ${item.audioStart ? `<button class="play-btn" onclick="playAudio('${item.audioStart}')" title="Програти початок">▶ Початок</button>` : ''}
-          ${item.audioEnd ? `<button class="play-btn" onclick="playAudio('${item.audioEnd}')" title="Програти кінець">⏹ Кінець</button>` : ''}
+          ${item.audioStart ? `<button class="play-btn" onclick="playAudio('${item.audioStart}')">▶ Початок</button>` : ''}
+          ${item.audioEnd ? `<button class="play-btn" onclick="playAudio('${item.audioEnd}')">⏹ Кінець</button>` : ''}
         </div>
       `;
       container.appendChild(div);
     });
   }
 
-  // Переведення "HH:MM" у хвилини від початку доби для легкого порівняння
   function timeToMinutes(timeStr) {
     if (!timeStr) return null;
     const [h, m] = timeStr.split(':').map(Number);
@@ -273,10 +284,8 @@
 
     document.getElementById("current-time").innerText = `${hours}:${minutes}:${seconds}`;
 
-    // Скидання зіграних дзвінків о півночі
     if (currentTimeStr === "00:00" && seconds === "00") playedToday.clear();
 
-    // Підсвічування поточного уроку
     scheduleData.forEach(item => {
       const card = document.getElementById(`card-${item.id}`);
       if (!card) return;
@@ -284,16 +293,13 @@
       const startMin = timeToMinutes(item.start);
       const endMin = timeToMinutes(item.end);
 
-      // Якщо урок має і початок, і кінець — перевіряємо проміжок
       if (startMin !== null && endMin !== null) {
         if (currentMinutes >= startMin && currentMinutes < endMin) {
           card.classList.add("active");
         } else {
           card.classList.remove("active");
         }
-      } 
-      // Для подій без чіткого кінця (наприклад, Кінець дня) — підсвічуємо протягом 15 хв
-      else if (startMin !== null) {
+      } else if (startMin !== null) {
         if (currentMinutes >= startMin && currentMinutes < startMin + 15) {
           card.classList.add("active");
         } else {
@@ -302,7 +308,6 @@
       }
     });
 
-    // Автоматичне відтворення за розкладом
     if (!autoPlayEnabled) return;
 
     scheduleData.forEach(item => {
