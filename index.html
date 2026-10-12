@@ -1,0 +1,241 @@
+<!DOCTYPE html>
+<html lang="uk">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Розклад дзвінків — NSS Початкова школа</title>
+  <style>
+    :root {
+      --primary: #2563eb;
+      --bg: #f8fafc;
+      --card-bg: #ffffff;
+      --text: #1e293b;
+      --accent: #16a34a;
+    }
+    body {
+      font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+      background-color: var(--bg);
+      color: var(--text);
+      margin: 0;
+      padding: 16px;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+    }
+    .container {
+      width: 100%;
+      max-width: 500px;
+    }
+    header {
+      text-align: center;
+      margin-bottom: 20px;
+    }
+    h1 {
+      font-size: 1.4rem;
+      color: var(--primary);
+      margin: 0 0 8px 0;
+    }
+    .clock-card {
+      background: var(--primary);
+      color: white;
+      text-align: center;
+      padding: 16px;
+      border-radius: 12px;
+      font-size: 2rem;
+      font-weight: bold;
+      margin-bottom: 20px;
+      box-shadow: 0 4px 6px -1px rgba(0,0,0,0.1);
+    }
+    .status {
+      font-size: 0.9rem;
+      font-weight: normal;
+      opacity: 0.9;
+      margin-top: 4px;
+    }
+    .controls {
+      background: var(--card-bg);
+      padding: 12px;
+      border-radius: 12px;
+      margin-bottom: 16px;
+      text-align: center;
+      box-shadow: 0 1px 3px rgba(0,0,0,0.1);
+    }
+    .btn {
+      background: var(--accent);
+      color: white;
+      border: none;
+      padding: 10px 20px;
+      font-size: 1rem;
+      border-radius: 8px;
+      cursor: pointer;
+      font-weight: 600;
+    }
+    .btn:active { transform: scale(0.98); }
+    .schedule-list {
+      display: flex;
+      flex-direction: column;
+      gap: 10px;
+    }
+    .item {
+      background: var(--card-bg);
+      border-radius: 10px;
+      padding: 12px 16px;
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      box-shadow: 0 1px 2px rgba(0,0,0,0.05);
+    }
+    .item.active {
+      border-left: 5px solid var(--accent);
+      background: #f0fdf4;
+    }
+    .item-title {
+      font-weight: bold;
+      font-size: 1rem;
+    }
+    .times {
+      font-size: 0.85rem;
+      color: #64748b;
+      margin-top: 2px;
+    }
+    .play-btn {
+      background: #e2e8f0;
+      border: none;
+      border-radius: 50%;
+      width: 36px;
+      height: 36px;
+      cursor: pointer;
+      font-size: 0.9rem;
+    }
+  </style>
+</head>
+<body>
+
+<div class="container">
+  <header>
+    <h1>Розклад дзвінків NSS</h1>
+    <div>Початкова школа</div>
+  </header>
+
+  <div class="clock-card">
+    <div id="current-time">00:00:00</div>
+    <div class="status" id="status-text">Автоматичне відтворення вимкнено</div>
+  </div>
+
+  <div class="controls">
+    <button class="btn" id="toggle-btn" onclick="toggleAutoPlay()">Увімкнути авто-дзвінки</button>
+  </div>
+
+  <div class="schedule-list" id="schedule"></div>
+</div>
+
+<audio id="audio-player" crossorigin="anonymous"></audio>
+
+<script>
+  // Дані розкладу, отримані з Google Таблиці
+  const scheduleData = [
+    { title: "Урок 1", start: "08:57", audioStart: "19AQUqLpF8grleveqWb0d0pAoaYMP7yv7", end: "09:40", audioEnd: "1ClrRcpZBjVVp1sEBmcvRzf-p1MblOfzk" },
+    { title: "Урок 2", start: "09:49", audioStart: "1uhoR4OEi7QKiCiN-RDzeC5t97otaKcST", end: "10:30", audioEnd: "1I1A-2Wy_NhCNjcHaSPV4ullWaytRjpxa" },
+    { title: "Урок 3", start: "10:39", audioStart: "11VQvDL_v3kjN0QBpURjbqPYefWTPsiFU", end: "11:20", audioEnd: "1l8cYliMdVKMc_uSLmuKw161cLOK0uf0P" },
+    { title: "Урок 4", start: "11:29", audioStart: "12zLrYEDKL2x6qJCyIZrLFSVonV5mtQex", end: "12:10", audioEnd: "" },
+    { title: "Обід", start: "12:10", audioStart: "1NikeUycPatxq1U9lSiEVPndwNjXrNsY-", end: "12:59", audioEnd: "" },
+    { title: "Урок 5", start: "12:59", audioStart: "1Z6VvKVqPfptL-AOsgnZl0MldPLGbzpSp", end: "13:40", audioEnd: "1LeMRxIH3Y5fC8iqL4F0tJtnJEZjNlL37" },
+    { title: "Урок 6", start: "13:49", audioStart: "1HQDT93zAxPFOxxCbPLul2M_ulKC9mxEh", end: "14:30", audioEnd: "19IiHaHs1D2n4uBOXjLJpGx5BrLoNfXdt" },
+    { title: "Урок 7", start: "14:39", audioStart: "152ohZNWOMAy9v4HN7lDHxq9Yg8RWRDBd", end: "15:20", audioEnd: "1u-eUEEJVzXUo6SZvOxmIQMLSVk-kYV5M" },
+    { title: "Урок 8", start: "15:29", audioStart: "1A43MUu-W_pixqCPyt0yLTWbkSsZZiQPb", end: "16:10", audioEnd: "1xQQ2DfS0PzdUhRGF1XIBsVbTlj4xPjK4" },
+    { title: "Вечеря", start: "17:00", audioStart: "1klDhAp5cHCEDg2AlRzegau45ZqFTygDj", end: "", audioEnd: "" },
+    { title: "Кінець дня", start: "18:00", audioStart: "1szhpoGUUUNSMZx9VqT8ssNRFdsK8g2OK", end: "", audioEnd: "" }
+  ];
+
+  let autoPlayEnabled = false;
+  let playedToday = new Set();
+
+  function getAudioUrl(fileId) {
+    if (!fileId) return null;
+    return `https://docs.google.com/uc?export=download&id=${fileId}`;
+  }
+
+  function playAudio(fileId) {
+    if (!fileId) return;
+    const player = document.getElementById("audio-player");
+    player.src = getAudioUrl(fileId);
+    player.play().catch(e => console.error("Помилка відтворення:", e));
+  }
+
+  function toggleAutoPlay() {
+    autoPlayEnabled = !autoPlayEnabled;
+    const btn = document.getElementById("toggle-btn");
+    const status = document.getElementById("status-text");
+
+    if (autoPlayEnabled) {
+      // Для обходу обмежень автовідтворення мобільних браузерів
+      const player = document.getElementById("audio-player");
+      player.play().catch(() => {});
+      
+      btn.innerText = "Зупинити авто-дзвінки";
+      btn.style.background = "#dc2626";
+      status.innerText = "Автоматичний режим АКТИВНИЙ";
+    } else {
+      btn.innerText = "Увімкнути авто-дзвінки";
+      btn.style.background = "#16a34a";
+      status.innerText = "Автоматичне відтворення вимкнено";
+    }
+  }
+
+  function renderSchedule() {
+    const container = document.getElementById("schedule");
+    container.innerHTML = "";
+
+    scheduleData.forEach((item, index) => {
+      const div = document.createElement("div");
+      div.className = "item";
+      
+      let timesText = `Початок: ${item.start}`;
+      if (item.end) timesText += ` | Кінець: ${item.end}`;
+
+      div.innerHTML = `
+        <div>
+          <div class="item-title">${item.title}</div>
+          <div class="times">${timesText}</div>
+        </div>
+        <div>
+          ${item.audioStart ? `<button class="play-btn" onclick="playAudio('${item.audioStart}')" title="Грати початок">▶</button>` : ''}
+          ${item.audioEnd ? `<button class="play-btn" onclick="playAudio('${item.audioEnd}')" title="Грати кінець">⏹</button>` : ''}
+        </div>
+      `;
+      container.appendChild(div);
+    });
+  }
+
+  function checkSchedule() {
+    const now = new Date();
+    const hours = String(now.getHours()).padStart(2, '0');
+    const minutes = String(now.getMinutes()).padStart(2, '0');
+    const seconds = String(now.getSeconds()).padStart(2, '0');
+    
+    const currentTimeStr = `${hours}:${minutes}`;
+    document.getElementById("current-time").innerText = `${hours}:${minutes}:${seconds}`;
+
+    // Скидання зіграних дзвінків о півночі
+    if (currentTimeStr === "00:00") playedToday.clear();
+
+    if (!autoPlayEnabled) return;
+
+    scheduleData.forEach(item => {
+      if (item.start === currentTimeStr && !playedToday.has(item.start + "_start")) {
+        playAudio(item.audioStart);
+        playedToday.add(item.start + "_start");
+      }
+      if (item.end && item.end === currentTimeStr && !playedToday.has(item.end + "_end")) {
+        playAudio(item.audioEnd);
+        playedToday.add(item.end + "_end");
+      }
+    });
+  }
+
+  renderSchedule();
+  setInterval(checkSchedule, 1000);
+</script>
+
+</body>
+</html>
