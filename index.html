@@ -178,44 +178,34 @@
 <audio id="audio-player"></audio>
 
 <script>
+  // Назви файлів мають точно збігатися з тими, що завантажені на GitHub
   const scheduleData = [
-    { id: "lesson1", title: "Урок 1", start: "08:57", audioStart: "19AQUqLpF8grleveqWb0d0pAoaYMP7yv7", end: "09:40", audioEnd: "1ClrRcpZBjVVp1sEBmcvRzf-p1MblOfzk" },
-    { id: "lesson2", title: "Урок 2", start: "09:49", audioStart: "1uhoR4OEi7QKiCiN-RDzeC5t97otaKcST", end: "10:30", audioEnd: "1I1A-2Wy_NhCNjcHaSPV4ullWaytRjpxa" },
-    { id: "lesson3", title: "Урок 3", start: "10:39", audioStart: "11VQvDL_v3kjN0QBpURjbqPYefWTPsiFU", end: "11:20", audioEnd: "1l8cYliMdVKMc_uSLmuKw161cLOK0uf0P" },
-    { id: "lesson4", title: "Урок 4", start: "11:29", audioStart: "12zLrYEDKL2x6qJCyIZrLFSVonV5mtQex", end: "12:10", audioEnd: "" },
-    { id: "lunch",   title: "Обід",   start: "12:10", audioStart: "1NikeUycPatxq1U9lSiEVPndwNjXrNsY-", end: "12:59", audioEnd: "" },
-    { id: "lesson5", title: "Урок 5", start: "12:59", audioStart: "1Z6VvKVqPfptL-AOsgnZl0MldPLGbzpSp", end: "13:40", audioEnd: "1LeMRxIH3Y5fC8iqL4F0tJtnJEZjNlL37" },
-    { id: "lesson6", title: "Урок 6", start: "13:49", audioStart: "1HQDT93zAxPFOxxCbPLul2M_ulKC9mxEh", end: "14:30", audioEnd: "19IiHaHs1D2n4uBOXjLJpGx5BrLoNfXdt" },
-    { id: "lesson7", title: "Урок 7", start: "14:39", audioStart: "152ohZNWOMAy9v4HN7lDHxq9Yg8RWRDBd", end: "15:20", audioEnd: "1u-eUEEJVzXUo6SZvOxmIQMLSVk-kYV5M" },
-    { id: "lesson8", title: "Урок 8", start: "15:29", audioStart: "1A43MUu-W_pixqCPyt0yLTWbkSsZZiQPb", end: "16:10", audioEnd: "1xQQ2DfS0PzdUhRGF1XIBsVbTlj4xPjK4" },
-    { id: "dinner",  title: "Вечеря", start: "17:00", audioStart: "1klDhAp5cHCEDg2AlRzegau45ZqFTygDj", end: "17:30", audioEnd: "" },
-    { id: "endday",  title: "Кінець дня", start: "18:00", audioStart: "1szhpoGUUUNSMZx9VqT8ssNRFdsK8g2OK", end: "18:15", audioEnd: "" }
+    { id: "lesson1", title: "Урок 1", start: "08:57", audioStart: "start1.mp3", end: "09:40", audioEnd: "end1.mp3" },
+    { id: "lesson2", title: "Урок 2", start: "09:49", audioStart: "start2.mp3", end: "10:30", audioEnd: "end2.mp3" },
+    { id: "lesson3", title: "Урок 3", start: "10:39", audioStart: "start3.mp3", end: "11:20", audioEnd: "end3.mp3" },
+    { id: "lesson4", title: "Урок 4", start: "11:29", audioStart: "start4.mp3", end: "12:10", audioEnd: "" },
+    { id: "lunch",   title: "Обід",   start: "12:10", audioStart: "lunch.mp3",  end: "12:59", audioEnd: "" },
+    { id: "lesson5", title: "Урок 5", start: "12:59", audioStart: "start5.mp3", end: "13:40", audioEnd: "end5.mp3" },
+    { id: "lesson6", title: "Урок 6", start: "13:49", audioStart: "start6.mp3", end: "14:30", audioEnd: "end6.mp3" },
+    { id: "lesson7", title: "Урок 7", start: "14:39", audioStart: "start7.mp3", end: "15:20", audioEnd: "end7.mp3" },
+    { id: "lesson8", title: "Урок 8", start: "15:29", audioStart: "start8.mp3", end: "16:10", audioEnd: "end8.mp3" },
+    { id: "dinner",  title: "Вечеря", start: "17:00", audioStart: "dinner.mp3", end: "17:30", audioEnd: "" },
+    { id: "endday",  title: "Кінець дня", start: "18:00", audioStart: "endday.mp3", end: "18:15", audioEnd: "" }
   ];
 
   let autoPlayEnabled = false;
   let playedToday = new Set();
 
-  function playAudio(fileId) {
-    if (!fileId) return;
+  function playAudio(filename) {
+    if (!filename) return;
 
     const player = document.getElementById("audio-player");
-    // Альтернативний надійний формат завантаження з Google Drive
-    const streamUrl = `https://drive.google.com/uc?export=download&id=${fileId}`;
-    
-    player.src = streamUrl;
+    player.src = filename;
     player.load();
-    
-    const playPromise = player.play();
-    if (playPromise !== undefined) {
-      playPromise.catch(error => {
-        console.warn("Помилка відтворення через UC, пробуємо відкрити прямим джерелом:", error);
-        // Резервний варіант прямим відкриттям
-        player.src = `https://docs.google.com/uc?export=open&id=${fileId}`;
-        player.play().catch(e => {
-          alert("Не вдалося відтворити файл. Перевірте, чи відкритий доступ до аудіофайлу на Google Диску за посиланням ('Усі, хто мають посилання').");
-        });
-      });
-    }
+    player.play().catch(e => {
+      console.error("Помилка відтворення файлу:", e);
+      alert("Не вдалося відтворити файл: " + filename + ". Перевірте, чи завантажено файл з такою назвою на GitHub.");
+    });
   }
 
   function toggleAutoPlay() {
@@ -224,7 +214,6 @@
     const status = document.getElementById("status-text");
 
     if (autoPlayEnabled) {
-      // Ініціалізація аудіоконтексту для браузера
       const player = document.getElementById("audio-player");
       player.play().catch(() => {});
       
