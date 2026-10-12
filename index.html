@@ -11,6 +11,8 @@
       --card-bg: #ffffff;
       --text: #1e293b;
       --accent: #16a34a;
+      --active-bg: #dcfce7;
+      --active-border: #22c55e;
     }
     body {
       font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
@@ -33,7 +35,11 @@
     h1 {
       font-size: 1.4rem;
       color: var(--primary);
-      margin: 0 0 8px 0;
+      margin: 0 0 4px 0;
+    }
+    .subtitle {
+      color: #64748b;
+      font-size: 0.95rem;
     }
     .clock-card {
       background: var(--primary);
@@ -41,16 +47,18 @@
       text-align: center;
       padding: 16px;
       border-radius: 12px;
-      font-size: 2rem;
+      font-size: 2.2rem;
       font-weight: bold;
-      margin-bottom: 20px;
+      margin-bottom: 16px;
       box-shadow: 0 4px 6px -1px rgba(0,0,0,0.1);
+      letter-spacing: 1px;
     }
     .status {
-      font-size: 0.9rem;
+      font-size: 0.85rem;
       font-weight: normal;
-      opacity: 0.9;
-      margin-top: 4px;
+      opacity: 0.95;
+      margin-top: 6px;
+      letter-spacing: normal;
     }
     .controls {
       background: var(--card-bg);
@@ -58,17 +66,19 @@
       border-radius: 12px;
       margin-bottom: 16px;
       text-align: center;
-      box-shadow: 0 1px 3px rgba(0,0,0,0.1);
+      box-shadow: 0 1px 3px rgba(0,0,0,0.08);
     }
     .btn {
       background: var(--accent);
       color: white;
       border: none;
-      padding: 10px 20px;
+      padding: 12px 20px;
       font-size: 1rem;
       border-radius: 8px;
       cursor: pointer;
       font-weight: 600;
+      transition: background 0.2s, transform 0.1s;
+      width: 100%;
     }
     .btn:active { transform: scale(0.98); }
     .schedule-list {
@@ -84,29 +94,65 @@
       justify-content: space-between;
       align-items: center;
       box-shadow: 0 1px 2px rgba(0,0,0,0.05);
+      border-left: 5px solid transparent;
+      transition: all 0.3s ease;
     }
+    /* Стилі для уроку, який триває зараз */
     .item.active {
-      border-left: 5px solid var(--accent);
-      background: #f0fdf4;
+      border-left: 6px solid var(--active-border);
+      background: var(--active-bg);
+      box-shadow: 0 2px 8px rgba(34, 197, 94, 0.2);
+      transform: scale(1.01);
     }
     .item-title {
       font-weight: bold;
-      font-size: 1rem;
+      font-size: 1.05rem;
+      display: flex;
+      align-items: center;
+      gap: 8px;
+    }
+    .badge-now {
+      display: none;
+      background: #22c55e;
+      color: white;
+      font-size: 0.7rem;
+      padding: 2px 6px;
+      border-radius: 4px;
+      text-transform: uppercase;
+      font-weight: bold;
+      animation: pulse 1.5s infinite;
+    }
+    .item.active .badge-now {
+      display: inline-block;
+    }
+    @keyframes pulse {
+      0% { opacity: 1; }
+      50% { opacity: 0.5; }
+      100% { opacity: 1; }
     }
     .times {
-      font-size: 0.85rem;
+      font-size: 0.88rem;
       color: #64748b;
-      margin-top: 2px;
+      margin-top: 4px;
+    }
+    .item.active .times {
+      color: #15803d;
+      font-weight: 500;
+    }
+    .btn-group {
+      display: flex;
+      gap: 6px;
     }
     .play-btn {
       background: #e2e8f0;
       border: none;
-      border-radius: 50%;
-      width: 36px;
-      height: 36px;
+      border-radius: 8px;
+      padding: 6px 10px;
       cursor: pointer;
-      font-size: 0.9rem;
+      font-size: 0.85rem;
+      transition: background 0.2s;
     }
+    .play-btn:hover { background: #cbd5e1; }
   </style>
 </head>
 <body>
@@ -114,7 +160,7 @@
 <div class="container">
   <header>
     <h1>Розклад дзвінків NSS</h1>
-    <div>Початкова школа</div>
+    <div class="subtitle">Початкова школа</div>
   </header>
 
   <div class="clock-card">
@@ -132,19 +178,18 @@
 <audio id="audio-player" crossorigin="anonymous"></audio>
 
 <script>
-  // Дані розкладу, отримані з Google Таблиці
   const scheduleData = [
-    { title: "Урок 1", start: "08:57", audioStart: "19AQUqLpF8grleveqWb0d0pAoaYMP7yv7", end: "09:40", audioEnd: "1ClrRcpZBjVVp1sEBmcvRzf-p1MblOfzk" },
-    { title: "Урок 2", start: "09:49", audioStart: "1uhoR4OEi7QKiCiN-RDzeC5t97otaKcST", end: "10:30", audioEnd: "1I1A-2Wy_NhCNjcHaSPV4ullWaytRjpxa" },
-    { title: "Урок 3", start: "10:39", audioStart: "11VQvDL_v3kjN0QBpURjbqPYefWTPsiFU", end: "11:20", audioEnd: "1l8cYliMdVKMc_uSLmuKw161cLOK0uf0P" },
-    { title: "Урок 4", start: "11:29", audioStart: "12zLrYEDKL2x6qJCyIZrLFSVonV5mtQex", end: "12:10", audioEnd: "" },
-    { title: "Обід", start: "12:10", audioStart: "1NikeUycPatxq1U9lSiEVPndwNjXrNsY-", end: "12:59", audioEnd: "" },
-    { title: "Урок 5", start: "12:59", audioStart: "1Z6VvKVqPfptL-AOsgnZl0MldPLGbzpSp", end: "13:40", audioEnd: "1LeMRxIH3Y5fC8iqL4F0tJtnJEZjNlL37" },
-    { title: "Урок 6", start: "13:49", audioStart: "1HQDT93zAxPFOxxCbPLul2M_ulKC9mxEh", end: "14:30", audioEnd: "19IiHaHs1D2n4uBOXjLJpGx5BrLoNfXdt" },
-    { title: "Урок 7", start: "14:39", audioStart: "152ohZNWOMAy9v4HN7lDHxq9Yg8RWRDBd", end: "15:20", audioEnd: "1u-eUEEJVzXUo6SZvOxmIQMLSVk-kYV5M" },
-    { title: "Урок 8", start: "15:29", audioStart: "1A43MUu-W_pixqCPyt0yLTWbkSsZZiQPb", end: "16:10", audioEnd: "1xQQ2DfS0PzdUhRGF1XIBsVbTlj4xPjK4" },
-    { title: "Вечеря", start: "17:00", audioStart: "1klDhAp5cHCEDg2AlRzegau45ZqFTygDj", end: "", audioEnd: "" },
-    { title: "Кінець дня", start: "18:00", audioStart: "1szhpoGUUUNSMZx9VqT8ssNRFdsK8g2OK", end: "", audioEnd: "" }
+    { id: "lesson1", title: "Урок 1", start: "08:57", audioStart: "19AQUqLpF8grleveqWb0d0pAoaYMP7yv7", end: "09:40", audioEnd: "1ClrRcpZBjVVp1sEBmcvRzf-p1MblOfzk" },
+    { id: "lesson2", title: "Урок 2", start: "09:49", audioStart: "1uhoR4OEi7QKiCiN-RDzeC5t97otaKcST", end: "10:30", audioEnd: "1I1A-2Wy_NhCNjcHaSPV4ullWaytRjpxa" },
+    { id: "lesson3", title: "Урок 3", start: "10:39", audioStart: "11VQvDL_v3kjN0QBpURjbqPYefWTPsiFU", end: "11:20", audioEnd: "1l8cYliMdVKMc_uSLmuKw161cLOK0uf0P" },
+    { id: "lesson4", title: "Урок 4", start: "11:29", audioStart: "12zLrYEDKL2x6qJCyIZrLFSVonV5mtQex", end: "12:10", audioEnd: "" },
+    { id: "lunch",   title: "Обід",   start: "12:10", audioStart: "1NikeUycPatxq1U9lSiEVPndwNjXrNsY-", end: "12:59", audioEnd: "" },
+    { id: "lesson5", title: "Урок 5", start: "12:59", audioStart: "1Z6VvKVqPfptL-AOsgnZl0MldPLGbzpSp", end: "13:40", audioEnd: "1LeMRxIH3Y5fC8iqL4F0tJtnJEZjNlL37" },
+    { id: "lesson6", title: "Урок 6", start: "13:49", audioStart: "1HQDT93zAxPFOxxCbPLul2M_ulKC9mxEh", end: "14:30", audioEnd: "19IiHaHs1D2n4uBOXjLJpGx5BrLoNfXdt" },
+    { id: "lesson7", title: "Урок 7", start: "14:39", audioStart: "152ohZNWOMAy9v4HN7lDHxq9Yg8RWRDBd", end: "15:20", audioEnd: "1u-eUEEJVzXUo6SZvOxmIQMLSVk-kYV5M" },
+    { id: "lesson8", title: "Урок 8", start: "15:29", audioStart: "1A43MUu-W_pixqCPyt0yLTWbkSsZZiQPb", end: "16:10", audioEnd: "1xQQ2DfS0PzdUhRGF1XIBsVbTlj4xPjK4" },
+    { id: "dinner",  title: "Вечеря", start: "17:00", audioStart: "1klDhAp5cHCEDg2AlRzegau45ZqFTygDj", end: "17:30", audioEnd: "" },
+    { id: "endday",  title: "Кінець дня", start: "18:00", audioStart: "1szhpoGUUUNSMZx9VqT8ssNRFdsK8g2OK", end: "18:15", audioEnd: "" }
   ];
 
   let autoPlayEnabled = false;
@@ -168,17 +213,16 @@
     const status = document.getElementById("status-text");
 
     if (autoPlayEnabled) {
-      // Для обходу обмежень автовідтворення мобільних браузерів
       const player = document.getElementById("audio-player");
-      player.play().catch(() => {});
+      player.play().catch(() => {}); // розблокування аудіо
       
       btn.innerText = "Зупинити авто-дзвінки";
       btn.style.background = "#dc2626";
-      status.innerText = "Автоматичний режим АКТИВНИЙ";
+      status.innerText = "🟢 Автоматичний режим АКТИВНИЙ";
     } else {
       btn.innerText = "Увімкнути авто-дзвінки";
       btn.style.background = "#16a34a";
-      status.innerText = "Автоматичне відтворення вимкнено";
+      status.innerText = "⚪ Автоматичне відтворення вимкнено";
     }
   }
 
@@ -186,39 +230,79 @@
     const container = document.getElementById("schedule");
     container.innerHTML = "";
 
-    scheduleData.forEach((item, index) => {
+    scheduleData.forEach((item) => {
       const div = document.createElement("div");
       div.className = "item";
+      div.id = `card-${item.id}`;
       
-      let timesText = `Початок: ${item.start}`;
-      if (item.end) timesText += ` | Кінець: ${item.end}`;
+      let timesText = `Початок: <b>${item.start}</b>`;
+      if (item.end) timesText += ` &nbsp;|&nbsp; Кінець: <b>${item.end}</b>`;
 
       div.innerHTML = `
         <div>
-          <div class="item-title">${item.title}</div>
+          <div class="item-title">
+            <span>${item.title}</span>
+            <span class="badge-now">Зараз</span>
+          </div>
           <div class="times">${timesText}</div>
         </div>
-        <div>
-          ${item.audioStart ? `<button class="play-btn" onclick="playAudio('${item.audioStart}')" title="Грати початок">▶</button>` : ''}
-          ${item.audioEnd ? `<button class="play-btn" onclick="playAudio('${item.audioEnd}')" title="Грати кінець">⏹</button>` : ''}
+        <div class="btn-group">
+          ${item.audioStart ? `<button class="play-btn" onclick="playAudio('${item.audioStart}')" title="Програти початок">▶ Початок</button>` : ''}
+          ${item.audioEnd ? `<button class="play-btn" onclick="playAudio('${item.audioEnd}')" title="Програти кінець">⏹ Кінець</button>` : ''}
         </div>
       `;
       container.appendChild(div);
     });
   }
 
-  function checkSchedule() {
+  // Переведення "HH:MM" у хвилини від початку доби для легкого порівняння
+  function timeToMinutes(timeStr) {
+    if (!timeStr) return null;
+    const [h, m] = timeStr.split(':').map(Number);
+    return h * 60 + m;
+  }
+
+  function updateClockAndHighlight() {
     const now = new Date();
     const hours = String(now.getHours()).padStart(2, '0');
     const minutes = String(now.getMinutes()).padStart(2, '0');
     const seconds = String(now.getSeconds()).padStart(2, '0');
     
     const currentTimeStr = `${hours}:${minutes}`;
+    const currentMinutes = now.getHours() * 60 + now.getMinutes();
+
     document.getElementById("current-time").innerText = `${hours}:${minutes}:${seconds}`;
 
     // Скидання зіграних дзвінків о півночі
-    if (currentTimeStr === "00:00") playedToday.clear();
+    if (currentTimeStr === "00:00" && seconds === "00") playedToday.clear();
 
+    // Підсвічування поточного уроку
+    scheduleData.forEach(item => {
+      const card = document.getElementById(`card-${item.id}`);
+      if (!card) return;
+
+      const startMin = timeToMinutes(item.start);
+      const endMin = timeToMinutes(item.end);
+
+      // Якщо урок має і початок, і кінець — перевіряємо проміжок
+      if (startMin !== null && endMin !== null) {
+        if (currentMinutes >= startMin && currentMinutes < endMin) {
+          card.classList.add("active");
+        } else {
+          card.classList.remove("active");
+        }
+      } 
+      // Для подій без чіткого кінця (наприклад, Кінець дня) — підсвічуємо протягом 15 хв
+      else if (startMin !== null) {
+        if (currentMinutes >= startMin && currentMinutes < startMin + 15) {
+          card.classList.add("active");
+        } else {
+          card.classList.remove("active");
+        }
+      }
+    });
+
+    // Автоматичне відтворення за розкладом
     if (!autoPlayEnabled) return;
 
     scheduleData.forEach(item => {
@@ -234,7 +318,8 @@
   }
 
   renderSchedule();
-  setInterval(checkSchedule, 1000);
+  updateClockAndHighlight();
+  setInterval(updateClockAndHighlight, 1000);
 </script>
 
 </body>
